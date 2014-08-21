@@ -1,8 +1,8 @@
-FROM centos
+FROM	centos
 
 MAINTAINER grzesiekw "g.wilkowicz@gmail.com"
 
-RUN yum install -y unzip tar
+RUN	yum install -y unzip tar
 
 # Java
 
@@ -13,26 +13,31 @@ RUN     cd /tmp && \
         mv /usr/java/jdk1.7.0_67 /usr/java/jdk7 && \
         rm /tmp/jdk-7u67-linux-x64.tar.gz
 
-ENV PATH $PATH:/usr/java/jdk7/bin
+ENV	PATH $PATH:/usr/java/jdk7/bin
 
 # Sonar
 
 RUN	cd /tmp && \
 	curl -O -L http://dist.sonar.codehaus.org/sonarqube-4.4.zip && \
 	unzip -d /opt /tmp/sonarqube-4.4.zip && \
-	useradd sonar
+	mv /opt/sonar* /opt/sonar
 
-RUN	sed -i s*sonar.jdbc.url=jdbc:h2*#sonar.jdbc.url=jdbc:h2*g /opt/sonarqube-4.4/conf/sonar.properties && \
-	sed -i s*#sonar.jdbc.url=jdbc:postgresql://localhost/sonar*sonar.jdbc.url=\${env:SONAR_DB_URL}*g /opt/sonarqube-4.4/conf/sonar.properties && \
-	sed -i s*sonar.jdbc.username=sonar*sonar.jdbc.username=\${env:SONAR_DB_USERNAME}*g /opt/sonarqube-4.4/conf/sonar.properties && \
-	sed -i s*sonar.jdbc.password=sonar*sonar.jdbc.password=\${env:SONAR_DB_PASSWORD}*g /opt/sonarqube-4.4/conf/sonar.properties
+RUN	useradd sonar
 
-RUN	chown -R sonar /opt/sonarqube-4.4
+RUN	sed -i s*sonar.jdbc.url=jdbc:h2:tcp://localhost:9092/sonar*sonar.jdbc.url=\${env:SONAR_JDBC_URL}*g /opt/sonar/conf/sonar.properties && \
+	sed -i s*sonar.jdbc.username=sonar*sonar.jdbc.username=\${env:SONAR_DB_USERNAME}*g /opt/sonar/conf/sonar.properties && \
+	sed -i s*sonar.jdbc.password=sonar*sonar.jdbc.password=\${env:SONAR_DB_PASSWORD}*g /opt/sonar/conf/sonar.properties && \
+	sed -i s*#sonar.web.context=*sonar.web.context=\${env:SONAR_WEB_CONTEXT}*g /opt/sonar/conf/sonar.properties
+
+RUN	chown -R sonar /opt/sonar
+
+EXPOSE	9000
+
+ENV	SONAR_JDBC_URL jdbc:h2:tcp://localhost:9092/sonar
+ENV	SONAR_WEB_CONTEXT /
 
 USER	sonar
 
-ENV	SONAR_DB_URL jdbc:h2:tcp://localhost:9092/sonar
-
-CMD	/opt/sonarqube-4.4/bin/linux-x86-64/sonar.sh console
+CMD	/opt/sonar/bin/linux-x86-64/sonar.sh console
 
 
